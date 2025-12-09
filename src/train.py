@@ -80,9 +80,11 @@ def _forward_capture(
                 x2 = torch.relu(x2)
                 pre = x2.clone()
             elif isinstance(layer, torch.nn.Dropout):
+                x2_pre = x2.clone()
                 x2_d = F.dropout(x2, p=layer.p, training=True)
+                # Identify dropped neurons: non-zero before dropout, zero after
                 if pre is not None:
-                    dropped = (pre != 0) & (x2_d == 0)
+                    dropped = (x2_pre != 0) & (x2_d == 0)
                     dropout_masks.append(dropped.detach().cpu().numpy().squeeze().astype(bool))
                 x2 = x2_d
 
@@ -118,10 +120,13 @@ def train_model(
     if hidden_sizes is None:
         hidden_sizes = [128, 64]
 
-    # Reproducibility
+    # Set random seeds for reproducibility
     random.seed(seed)
     np.random.seed(seed)
     torch.manual_seed(seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed(seed)
+        torch.cuda.manual_seed_all(seed)
 
     # Generate and preprocess dataset
     X, y = generate_dataset(n_per_class, centered=True, thickness=2, jitter=2, fill=True)
@@ -131,7 +136,7 @@ def train_model(
     X = (X - mean) / std
 
     # Split into train/validation sets
-    X_train, X_val, y_train, y_val = train_test_split(X, y, test_size=0.2, random_state=42)
+    X_train, X_val, y_train, y_val = train_test_split(X, y, test_size=0.2, random_state=seed)
     train_loader = DataLoader(
         TensorDataset(torch.tensor(X_train, dtype=torch.float32), torch.tensor(y_train, dtype=torch.long)),
         batch_size=32,
