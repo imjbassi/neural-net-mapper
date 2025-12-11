@@ -141,12 +141,18 @@ def train_model(
     # Split into train/validation sets
     X_train, X_val, y_train, y_val = train_test_split(X, y, test_size=0.2, random_state=seed)
     train_loader = DataLoader(
-        TensorDataset(torch.tensor(X_train, dtype=torch.float32), torch.tensor(y_train, dtype=torch.long)),
+        TensorDataset(
+            torch.tensor(X_train, dtype=torch.float32),
+            torch.tensor(y_train, dtype=torch.long)
+        ),
         batch_size=32,
         shuffle=True
     )
     val_loader = DataLoader(
-        TensorDataset(torch.tensor(X_val, dtype=torch.float32), torch.tensor(y_val, dtype=torch.long)),
+        TensorDataset(
+            torch.tensor(X_val, dtype=torch.float32),
+            torch.tensor(y_val, dtype=torch.long)
+        ),
         batch_size=32
     )
 

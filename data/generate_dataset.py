@@ -35,13 +35,12 @@ def generate_shape_image(
             center_x, center_y = size // 2, size // 2
             x0 = apply_jitter(center_x - radius)
             y0 = apply_jitter(center_y - radius)
-            x1 = x0 + 2 * radius
-            y1 = y0 + 2 * radius
         else:
-            x0 = random.randint(0, size - 2 * radius)
-            y0 = random.randint(0, size - 2 * radius)
-            x1 = x0 + 2 * radius
-            y1 = y0 + 2 * radius
+            x0 = random.randint(0, max(0, size - 2 * radius))
+            y0 = random.randint(0, max(0, size - 2 * radius))
+        
+        x1 = x0 + 2 * radius
+        y1 = y0 + 2 * radius
 
         if fill:
             draw.ellipse([x0, y0, x1, y1], fill=0)
@@ -54,13 +53,12 @@ def generate_shape_image(
             center_x, center_y = size // 2, size // 2
             x0 = apply_jitter(center_x - side_length // 2)
             y0 = apply_jitter(center_y - side_length // 2)
-            x1 = x0 + side_length
-            y1 = y0 + side_length
         else:
-            x0 = random.randint(0, size - side_length)
-            y0 = random.randint(0, size - side_length)
-            x1 = x0 + side_length
-            y1 = y0 + side_length
+            x0 = random.randint(0, max(0, size - side_length))
+            y0 = random.randint(0, max(0, size - side_length))
+        
+        x1 = x0 + side_length
+        y1 = y0 + side_length
 
         if fill:
             draw.rectangle([x0, y0, x1, y1], fill=0)
@@ -75,9 +73,18 @@ def generate_shape_image(
             center_x, center_y = size // 2, size // 2
             # Equilateral triangle with centroid at (center_x, center_y)
             points = [
-                (apply_jitter(int(center_x)), apply_jitter(int(center_y - 2 * height / 3))),
-                (apply_jitter(int(center_x - side_length / 2)), apply_jitter(int(center_y + height / 3))),
-                (apply_jitter(int(center_x + side_length / 2)), apply_jitter(int(center_y + height / 3))),
+                (
+                    apply_jitter(int(center_x)),
+                    apply_jitter(int(center_y - 2 * height / 3)),
+                ),
+                (
+                    apply_jitter(int(center_x - side_length / 2)),
+                    apply_jitter(int(center_y + height / 3)),
+                ),
+                (
+                    apply_jitter(int(center_x + side_length / 2)),
+                    apply_jitter(int(center_y + height / 3)),
+                ),
             ]
         else:
             # Random triangle with non-degenerate vertices
