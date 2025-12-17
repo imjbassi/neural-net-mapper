@@ -60,3 +60,15 @@ neural-net-mapper/
 - **Training Metrics**: Live loss and accuracy tracking
 - **Flexible Architecture**: Configurable hidden layer sizes and dropout rates
 - **Reproducible**: Seed-based random initialization for consistent results
+
+## Requirements
+
+- Python 3.7+
+- PyTorch
+- NumPy
+- Matplotlib
+- Pillow (PIL)
+
+## License
+
+MIT
