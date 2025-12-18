@@ -15,6 +15,18 @@ class ShapeMLP(nn.Module):
     def __init__(self, input_size, hidden_sizes, num_classes=3, dropout_prob=0.5):
         super().__init__()
         
+        # Validate inputs
+        if input_size <= 0:
+            raise ValueError(f"input_size must be positive, got {input_size}")
+        if num_classes <= 0:
+            raise ValueError(f"num_classes must be positive, got {num_classes}")
+        if not 0 <= dropout_prob < 1:
+            raise ValueError(f"dropout_prob must be in [0, 1), got {dropout_prob}")
+        if not hidden_sizes:
+            raise ValueError("hidden_sizes cannot be empty")
+        if any(size <= 0 for size in hidden_sizes):
+            raise ValueError("All hidden layer sizes must be positive")
+        
         # Build sequential layers
         layers = []
         prev_size = input_size
