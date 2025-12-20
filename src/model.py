@@ -27,14 +27,22 @@ class ShapeMLP(nn.Module):
         if any(size <= 0 for size in hidden_sizes):
             raise ValueError("All hidden layer sizes must be positive")
         
+        # Store configuration for potential inspection
+        self.input_size = input_size
+        self.hidden_sizes = hidden_sizes
+        self.num_classes = num_classes
+        self.dropout_prob = dropout_prob
+        
         # Build sequential layers
         layers = []
         prev_size = input_size
         
         for hidden_size in hidden_sizes:
-            layers.append(nn.Linear(prev_size, hidden_size))
-            layers.append(nn.ReLU())
-            layers.append(nn.Dropout(p=dropout_prob))
+            layers.extend([
+                nn.Linear(prev_size, hidden_size),
+                nn.ReLU(),
+                nn.Dropout(p=dropout_prob)
+            ])
             prev_size = hidden_size
         
         # Output layer (no activation or dropout)

@@ -38,7 +38,7 @@ def generate_shape_image(
         else:
             x0 = random.randint(0, max(0, size - 2 * radius))
             y0 = random.randint(0, max(0, size - 2 * radius))
-        
+
         x1 = x0 + 2 * radius
         y1 = y0 + 2 * radius
 
@@ -56,7 +56,7 @@ def generate_shape_image(
         else:
             x0 = random.randint(0, max(0, size - side_length))
             y0 = random.randint(0, max(0, size - side_length))
-        
+
         x1 = x0 + side_length
         y1 = y0 + side_length
 
@@ -97,7 +97,7 @@ def generate_shape_image(
         if fill:
             draw.polygon(points, fill=0)
         else:
-            draw.polygon(points, outline=0)
+            draw.polygon(points, outline=0, width=thickness)
 
     return np.array(img, dtype=np.float32) / 255.0
 
