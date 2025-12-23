@@ -1,3 +1,4 @@
+```python
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
@@ -19,8 +20,20 @@ def _draw_network(
     output_labels=None,
 ):
     """Draw nodes and connecting weights between layers.
-    acts: [h1, h2, ..., probs]
-    weights: [W(h1->h2), ..., W(hk->out)]  shape (out, in)
+    
+    Args:
+        ax: Matplotlib axis to draw on
+        acts: List of activation arrays [h1, h2, ..., probs]
+        weights: List of weight matrices [W(h1->h2), ..., W(hk->out)] with shape (out, in)
+        layer_x: X-coordinates for each layer
+        dropout_masks: Optional list of boolean masks indicating dropped nodes
+        node_radius: Radius for drawing nodes (unused, kept for API compatibility)
+        top_k_edges: Number of strongest edges to draw per output node
+        cmap: Colormap for node coloring
+        act_min: Minimum activation value for normalization
+        act_max: Maximum activation value for normalization
+        layer_labels: Labels for each layer
+        output_labels: Labels for output nodes
     """
     ax.clear()
     ax.set_axis_off()
@@ -33,65 +46,74 @@ def _draw_network(
         if all_act.size == 0:
             a_min, a_max = 0.0, 1.0
         else:
-            a_min, a_max = float(np.min(all_act)), float(np.max(all_act + 1e-8))
+            a_min = float(np.min(all_act))
+            a_max = float(np.max(all_act))
             if a_max - a_min < 1e-6:
                 a_max = a_min + 1e-6
     else:
         a_min, a_max = float(act_min), float(act_max)
         if a_max - a_min < 1e-6:
             a_max = a_min + 1e-6
+    
     cmap = cmap or mpl_cmaps.get_cmap('viridis')
 
-    # Determine node positions per layer
+    # Determine node positions per layer (max 12 nodes displayed per layer)
+    max_nodes_per_layer = 12
     layer_sizes = [acts[0].shape[0]] + [a.shape[0] for a in acts[1:]]
     y_positions = []
     for lsize in layer_sizes:
-        ys = np.linspace(0.1, 0.9, num=min(lsize, 12))
+        ys = np.linspace(0.1, 0.9, num=min(lsize, max_nodes_per_layer))
         y_positions.append(ys)
 
     # Draw connections using provided weights
     for li, W in enumerate(weights):
         # weights[li] connects acts[li] (in) -> acts[li+1] (out)
-        x0, x1 = layer_x[li+1], layer_x[li+2]
+        x0, x1 = layer_x[li + 1], layer_x[li + 2]
         in_sz = W.shape[1]
         out_sz = W.shape[0]
-        in_idx = np.linspace(0, min(in_sz, 12)-1, num=min(in_sz, 12), dtype=int)
-        out_idx = np.linspace(0, min(out_sz, 12)-1, num=min(out_sz, 12), dtype=int)
-        for oi, _ in enumerate(out_idx):
-            y_out = y_positions[li+1][oi]
+        in_idx = np.linspace(0, in_sz - 1, num=min(in_sz, max_nodes_per_layer), dtype=int)
+        out_idx = np.linspace(0, out_sz - 1, num=min(out_sz, max_nodes_per_layer), dtype=int)
+        
+        w_std = np.std(W) + 1e-6
+        
+        for oi, out_node_idx in enumerate(out_idx):
+            y_out = y_positions[li + 1][oi]
             # Draw only top-k strongest incoming edges for clarity
-            sub_w = np.abs(W[out_idx[oi]][in_idx])
+            sub_w = np.abs(W[out_node_idx][in_idx])
             k = min(top_k_edges, len(in_idx))
             top_idx = np.argsort(sub_w)[-k:]
+            
             for ii in top_idx:
                 ix = in_idx[ii]
-                weight = W[out_idx[oi], ix]
-                # color by sign; thickness/alpha by magnitude
-                mag = float(abs(weight)) / (np.std(W) + 1e-6)
+                weight = W[out_node_idx, ix]
+                # Color by sign; thickness/alpha by magnitude
+                mag = float(abs(weight)) / w_std
                 mag = float(np.clip(mag, 0.0, 1.0))
                 alpha = 0.25 + 0.6 * mag
                 color = (0.1, 0.6, 0.2, alpha) if weight >= 0 else (0.8, 0.2, 0.2, alpha)
-                y_in = y_positions[li][ii % len(y_positions[li])]
-                ax.plot([x0, x1], [y_in, y_out], color=color, linewidth=0.6 + 2.4 * mag)
+                y_in = y_positions[li][ii]
+                ax.plot([x0, x1], [y_in, y_out], color=color, linewidth=0.6 + 2.4 * mag, zorder=2)
 
     # Draw nodes
     for li, a in enumerate(acts):
-        xs = np.full_like(y_positions[li], layer_x[li+1], dtype=float)
-        # subsample activations to max 12 nodes for clarity
-        idx = np.linspace(0, a.shape[0]-1, num=min(a.shape[0], 12), dtype=int)
+        xs = np.full_like(y_positions[li], layer_x[li + 1], dtype=float)
+        # Subsample activations to max 12 nodes for clarity
+        idx = np.linspace(0, a.shape[0] - 1, num=min(a.shape[0], max_nodes_per_layer), dtype=int)
         a_sub = a[idx]
         norm = (a_sub - a_min) / (a_max - a_min)
         colors = cmap(np.clip(norm, 0, 1))
-        sizes = 250 * (0.4 + 0.9 * np.clip(norm, 0, 1))  # scale node size by activation
+        sizes = 250 * (0.4 + 0.9 * np.clip(norm, 0, 1))  # Scale node size by activation
         ax.scatter(xs, y_positions[li], s=sizes, c=colors, edgecolors='k', linewidths=0.4, zorder=3)
-        # If dropout mask available for this layer (it's captured per hidden layer right after ReLU)
+        
+        # If dropout mask available for this layer
         if dropout_masks and li < len(dropout_masks):
             dmask = dropout_masks[li]
-            d_idx = np.linspace(0, dmask.shape[0]-1, num=min(dmask.shape[0], 12), dtype=int)
+            d_idx = np.linspace(0, dmask.shape[0] - 1, num=min(dmask.shape[0], max_nodes_per_layer), dtype=int)
             dropped = dmask[d_idx]
             for j, dropped_flag in enumerate(dropped):
                 if dropped_flag:
-                    ax.scatter([xs[j]], [y_positions[li][j]], s=300, facecolors='none', edgecolors='red', linewidths=1.2, zorder=4)
+                    ax.scatter([xs[j]], [y_positions[li][j]], s=300, facecolors='none', 
+                             edgecolors='red', linewidths=1.2, zorder=4)
 
         # Layer labels at the top of each column
         if layer_labels and li < len(layer_labels):
@@ -100,7 +122,7 @@ def _draw_network(
     # Output labels next to last layer
     if output_labels:
         xs_last = np.full_like(y_positions[-1], layer_x[-1], dtype=float)
-        for j, name in enumerate(output_labels[: len(y_positions[-1])]):
+        for j, name in enumerate(output_labels[:len(y_positions[-1])]):
             ax.text(xs_last[0] + 0.03, y_positions[-1][j], name, fontsize=8, va='center')
 
     # Legend
@@ -117,7 +139,15 @@ def _draw_network(
 
 
 def visualize_snapshots(snapshots, save_path_mp4="outputs/animation.mp4", save_path_gif=None, fps=2, top_k_edges=8):
-    # snapshots: list of dicts
+    """Create an animated visualization of network training snapshots.
+    
+    Args:
+        snapshots: List of snapshot dictionaries containing network state
+        save_path_mp4: Path to save MP4 animation (None to skip)
+        save_path_gif: Path to save GIF animation (None to skip, used as fallback if MP4 fails)
+        fps: Frames per second for animation
+        top_k_edges: Number of strongest edges to draw per output node
+    """
     if isinstance(snapshots, np.ndarray):
         snapshots = list(snapshots)
 
@@ -150,9 +180,8 @@ def visualize_snapshots(snapshots, save_path_mp4="outputs/animation.mp4", save_p
     ax_bar.set_ylim(0, 1)
 
     # Precompute network x positions
-    # acts: [h1, h2, ..., probs] -> L layers for drawing
     max_layers = max(len(s["acts"]) for s in snapshots)
-    layer_x = np.linspace(0.1, 0.9, max_layers + 1)  # index from 1..L used in draw
+    layer_x = np.linspace(0.1, 0.9, max_layers + 1)
 
     # Compute global activation scale across all snapshots (hidden layers only)
     hidden_vals = []
@@ -178,17 +207,16 @@ def visualize_snapshots(snapshots, save_path_mp4="outputs/animation.mp4", save_p
         loss_hist = s["loss_hist"]
         acc_hist = s["acc_hist"]
 
-        # input image
+        # Input image
         im.set_data(s["img"])
         pred = s.get("pred", None)
         conf = s.get("conf", None)
         if pred is not None and conf is not None:
-            classes = ["circle", "square", "triangle"]
-            pred_txt.set_text(f"Pred: {classes[pred]} ({conf*100:.1f}%)")
+            pred_txt.set_text(f"Pred: {classes[pred]} ({conf * 100:.1f}%)")
         else:
             pred_txt.set_text("")
 
-        # metrics
+        # Metrics
         xs = np.arange(1, len(loss_hist) + 1)
         loss_line.set_data(xs, loss_hist)
         acc_line.set_data(xs, acc_hist)
@@ -196,13 +224,13 @@ def visualize_snapshots(snapshots, save_path_mp4="outputs/animation.mp4", save_p
         y_max = max(1.0, max(loss_hist[-1], max(acc_hist) if acc_hist else 1.0) + 0.1)
         ax_metrics.set_ylim(0, y_max)
 
-        # bar probs from last activation
+        # Bar chart of class probabilities
         probs = acts[-1]
         for b, v in zip(bars, probs):
             b.set_height(float(v))
 
-        # network
-        layer_labels = [f"H{i+1}" for i in range(len(acts)-1)] + ["Out"]
+        # Network visualization
+        layer_labels = [f"H{i + 1}" for i in range(len(acts) - 1)] + ["Out"]
         _draw_network(
             ax_net,
             acts,
@@ -214,10 +242,10 @@ def visualize_snapshots(snapshots, save_path_mp4="outputs/animation.mp4", save_p
             act_min=act_min,
             act_max=act_max,
             layer_labels=layer_labels,
-            output_labels=s.get("classes", ["circle","square","triangle"]),
+            output_labels=s.get("classes", ["circle", "square", "triangle"]),
         )
 
-        title.set_text(f"Epoch {epoch}  |  Loss: {loss_hist[-1]:.3f}  Acc: {acc_hist[-1]*100:.1f}%")
+        title.set_text(f"Epoch {epoch}  |  Loss: {loss_hist[-1]:.3f}  Acc: {acc_hist[-1] * 100:.1f}%")
         return [im, loss_line, acc_line, *bars]
 
     ani = animation.FuncAnimation(fig, update, frames=len(snapshots), blit=False, repeat=False)
@@ -238,3 +266,4 @@ def visualize_snapshots(snapshots, save_path_mp4="outputs/animation.mp4", save_p
 if __name__ == "__main__":
     data = np.load("outputs/snapshots.npz", allow_pickle=True)["snapshots"]
     visualize_snapshots(data)
+```
