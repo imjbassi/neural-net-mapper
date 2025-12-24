@@ -151,6 +151,9 @@ def visualize_snapshots(snapshots, save_path_mp4="outputs/animation.mp4", save_p
     if isinstance(snapshots, np.ndarray):
         snapshots = list(snapshots)
 
+    if not snapshots:
+        return
+
     fig = plt.figure(figsize=(10, 6))
 
     # Layout: left input image; center network; right metrics
@@ -221,7 +224,7 @@ def visualize_snapshots(snapshots, save_path_mp4="outputs/animation.mp4", save_p
         loss_line.set_data(xs, loss_hist)
         acc_line.set_data(xs, acc_hist)
         ax_metrics.set_xlim(1, max(2, len(loss_hist)))
-        y_max = max(1.0, max(loss_hist[-1], max(acc_hist) if acc_hist else 1.0) + 0.1)
+        y_max = max(1.0, max(loss_hist[-1] if loss_hist else 0.0, max(acc_hist) if acc_hist else 0.0) + 0.1)
         ax_metrics.set_ylim(0, y_max)
 
         # Bar chart of class probabilities

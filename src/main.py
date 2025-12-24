@@ -1,7 +1,6 @@
 ```python
 """Main entry point for the neural network mapper application."""
 
-import numpy as np
 from src.train import train_model
 from src.visualize import visualize_snapshots
 
