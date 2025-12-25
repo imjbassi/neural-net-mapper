@@ -29,7 +29,7 @@ class ShapeMLP(nn.Module):
         
         # Store configuration for potential inspection
         self.input_size = input_size
-        self.hidden_sizes = hidden_sizes
+        self.hidden_sizes = list(hidden_sizes)  # Create a copy to avoid external mutation
         self.num_classes = num_classes
         self.dropout_prob = dropout_prob
         
@@ -37,7 +37,7 @@ class ShapeMLP(nn.Module):
         layers = []
         prev_size = input_size
         
-        for hidden_size in hidden_sizes:
+        for hidden_size in self.hidden_sizes:
             layers.extend([
                 nn.Linear(prev_size, hidden_size),
                 nn.ReLU(),
