@@ -87,7 +87,7 @@ def generate_shape_image(
                 ),
             ]
         else:
-            # Random triangle with non-degenerate vertices
+            # Random triangle with vertices within image bounds
             points = [
                 (random.randint(4, size - 4), random.randint(4, size - 4)),
                 (random.randint(4, size - 4), random.randint(4, size - 4)),
@@ -98,6 +98,9 @@ def generate_shape_image(
             draw.polygon(points, fill=0)
         else:
             draw.polygon(points, outline=0, width=thickness)
+
+    else:
+        raise ValueError(f"Unknown shape: {shape}. Must be 'circle', 'square', or 'triangle'")
 
     return np.array(img, dtype=np.float32) / 255.0
 
