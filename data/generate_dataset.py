@@ -100,7 +100,9 @@ def generate_shape_image(
             draw.polygon(points, outline=0, width=thickness)
 
     else:
-        raise ValueError(f"Unknown shape: {shape}. Must be 'circle', 'square', or 'triangle'")
+        raise ValueError(
+            f"Unknown shape: {shape}. Must be 'circle', 'square', or 'triangle'"
+        )
 
     return np.array(img, dtype=np.float32) / 255.0
 
