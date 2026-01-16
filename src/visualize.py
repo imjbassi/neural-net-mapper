@@ -68,7 +68,7 @@ def _draw_network(
     # Draw connections using provided weights
     for li, W in enumerate(weights):
         # weights[li] connects acts[li] (in) -> acts[li+1] (out)
-        x0, x1 = layer_x[li + 1], layer_x[li + 2]
+        x0, x1 = layer_x[li], layer_x[li + 1]
         in_sz = W.shape[1]
         out_sz = W.shape[0]
         in_idx = np.linspace(0, in_sz - 1, num=min(in_sz, max_nodes_per_layer), dtype=int)
@@ -96,7 +96,7 @@ def _draw_network(
 
     # Draw nodes
     for li, a in enumerate(acts):
-        xs = np.full_like(y_positions[li], layer_x[li + 1], dtype=float)
+        xs = np.full_like(y_positions[li], layer_x[li], dtype=float)
         # Subsample activations to max 12 nodes for clarity
         idx = np.linspace(0, a.shape[0] - 1, num=min(a.shape[0], max_nodes_per_layer), dtype=int)
         a_sub = a[idx]
@@ -184,7 +184,7 @@ def visualize_snapshots(snapshots, save_path_mp4="outputs/animation.mp4", save_p
 
     # Precompute network x positions
     max_layers = max(len(s["acts"]) for s in snapshots)
-    layer_x = np.linspace(0.1, 0.9, max_layers + 1)
+    layer_x = np.linspace(0.1, 0.9, max_layers)
 
     # Compute global activation scale across all snapshots (hidden layers only)
     hidden_vals = []
