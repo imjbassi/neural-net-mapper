@@ -1,3 +1,4 @@
+```markdown
 # neural-net-mapper
 
 An interactive Python tool that trains a multi-layer perceptron (MLP) with dropout on a synthetic shapes dataset and maps its inner workings over time. It visualizes neuron activations, weight magnitudes/signs, predictions, and live training loss/accuracy through animated network diagrams using Matplotlib.
@@ -72,3 +73,4 @@ neural-net-mapper/
 ## License
 
 MIT
+```
