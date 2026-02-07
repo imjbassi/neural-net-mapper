@@ -27,9 +27,13 @@ def main():
             visualize_snapshots(snapshots)
         else:
             print("Warning: No snapshots were generated during training.")
+            sys.exit(1)
+    except KeyboardInterrupt:
+        print("\nTraining interrupted by user.")
+        sys.exit(130)
     except Exception as e:
-        print(f"Error during execution: {e}")
-        raise
+        print(f"Error during execution: {e}", file=sys.stderr)
+        sys.exit(1)
 
 
 if __name__ == "__main__":
