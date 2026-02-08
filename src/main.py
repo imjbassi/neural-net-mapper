@@ -19,23 +19,24 @@ def main():
     2. Visualizes the captured snapshots to show training progression
     
     Returns:
-        None
+        int: Exit code (0 for success, non-zero for failure)
     """
     try:
         snapshots = train_model()
         if snapshots:
             visualize_snapshots(snapshots)
+            return 0
         else:
             print("Warning: No snapshots were generated during training.")
-            sys.exit(1)
+            return 1
     except KeyboardInterrupt:
         print("\nTraining interrupted by user.")
-        sys.exit(130)
+        return 130
     except Exception as e:
         print(f"Error during execution: {e}", file=sys.stderr)
-        sys.exit(1)
+        return 1
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())
 ```
