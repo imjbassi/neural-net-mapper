@@ -72,21 +72,21 @@ def _forward_capture(
     if capture_dropout:
         torch.manual_seed(base_seed + int(epoch))
         x2 = sample_x
-        pre = None
+        pre_activation = None
         for layer in model.model:
             if isinstance(layer, torch.nn.Linear):
                 x2 = x2 @ layer.weight.T + layer.bias
             elif isinstance(layer, torch.nn.ReLU):
                 x2 = torch.relu(x2)
-                pre = x2.clone()
+                pre_activation = x2.clone()
             elif isinstance(layer, torch.nn.Dropout):
                 x2_pre = x2.clone()
-                x2_d = F.dropout(x2, p=layer.p, training=True)
+                x2_dropped = F.dropout(x2, p=layer.p, training=True)
                 # Identify dropped neurons: non-zero before dropout, zero after
-                if pre is not None:
-                    dropped = (x2_pre != 0) & (x2_d == 0)
+                if pre_activation is not None:
+                    dropped = (x2_pre != 0) & (x2_dropped == 0)
                     dropout_masks.append(dropped.detach().cpu().numpy().squeeze().astype(bool))
-                x2 = x2_d
+                x2 = x2_dropped
 
     return acts, weights_for_viz, logits, pred_label, pred_conf, dropout_masks
 
