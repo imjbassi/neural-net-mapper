@@ -27,13 +27,15 @@ def main():
             visualize_snapshots(snapshots)
             return 0
         else:
-            print("Warning: No snapshots were generated during training.")
+            print("Warning: No snapshots were generated during training.", file=sys.stderr)
             return 1
     except KeyboardInterrupt:
-        print("\nTraining interrupted by user.")
+        print("\nTraining interrupted by user.", file=sys.stderr)
         return 130
     except Exception as e:
         print(f"Error during execution: {e}", file=sys.stderr)
+        import traceback
+        traceback.print_exc(file=sys.stderr)
         return 1
 
 
