@@ -2,6 +2,7 @@
 """Main entry point for the neural network mapper application."""
 
 import sys
+import traceback
 from pathlib import Path
 
 # Add src directory to path to allow running from project root
@@ -19,7 +20,7 @@ def main():
     2. Visualizes the captured snapshots to show training progression
     
     Returns:
-        int: Exit code (0 for success, non-zero for failure)
+        int: Exit code (0 for success, 1 for failure, 130 for user interrupt)
     """
     try:
         snapshots = train_model()
@@ -34,7 +35,6 @@ def main():
         return 130
     except Exception as e:
         print(f"Error during execution: {e}", file=sys.stderr)
-        import traceback
         traceback.print_exc(file=sys.stderr)
         return 1
 
