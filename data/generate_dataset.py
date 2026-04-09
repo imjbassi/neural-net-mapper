@@ -127,9 +127,13 @@ def generate_dataset(
             - Labels: 0=circle, 1=square, 2=triangle
     """
     shapes = ["circle", "square", "triangle"]
-    X = []
-    y = []
-
+    total_samples = n_per_class * len(shapes)
+    
+    # Pre-allocate arrays for better performance
+    X = np.empty((total_samples, size * size), dtype=np.float32)
+    y = np.empty(total_samples, dtype=np.int64)
+    
+    idx = 0
     for label, shape in enumerate(shapes):
         for _ in range(n_per_class):
             img = generate_shape_image(
@@ -140,11 +144,9 @@ def generate_dataset(
                 jitter=jitter,
                 fill=fill,
             )
-            X.append(img.flatten())
-            y.append(label)
-
-    X = np.array(X, dtype=np.float32)
-    y = np.array(y, dtype=np.int64)
+            X[idx] = img.flatten()
+            y[idx] = label
+            idx += 1
 
     return X, y
 ```
