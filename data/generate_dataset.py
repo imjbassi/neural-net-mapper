@@ -128,11 +128,11 @@ def generate_dataset(
     """
     shapes = ["circle", "square", "triangle"]
     total_samples = n_per_class * len(shapes)
-    
+
     # Pre-allocate arrays for better performance
     X = np.empty((total_samples, size * size), dtype=np.float32)
     y = np.empty(total_samples, dtype=np.int64)
-    
+
     idx = 0
     for label, shape in enumerate(shapes):
         for _ in range(n_per_class):
