@@ -1,14 +1,16 @@
 ```python
-import torch
-from torch.utils.data import TensorDataset, DataLoader
-from sklearn.model_selection import train_test_split
+import os
+import random
+from typing import Any, Dict, List, Tuple
+
 import numpy as np
+import torch
+import torch.nn.functional as F
+from sklearn.model_selection import train_test_split
+from torch.utils.data import DataLoader, TensorDataset
+
 from data.generate_dataset import generate_dataset
 from src.model import ShapeMLP
-import os
-from typing import List, Tuple, Dict, Any
-import torch.nn.functional as F
-import random
 
 SHAPE_NAMES = ["circle", "square", "triangle"]
 
@@ -18,7 +20,7 @@ def _forward_capture(
     sample_x: torch.Tensor,
     epoch: int = 0,
     capture_dropout: bool = True,
-    base_seed: int = 1234
+    base_seed: int = 1234,
 ) -> Tuple[List[np.ndarray], List[np.ndarray], np.ndarray, int, float, List[np.ndarray]]:
     """Run a manual forward pass to capture per-layer activations and weights.
 
@@ -97,7 +99,7 @@ def train_model(
     hidden_sizes: List[int] = None,
     dropout: float = 0.3,
     n_per_class: int = 300,
-    seed: int = 42
+    seed: int = 42,
 ) -> List[Dict[str, Any]]:
     """Train an MLP and capture visualization snapshots.
 
@@ -142,18 +144,16 @@ def train_model(
     X_train, X_val, y_train, y_val = train_test_split(X, y, test_size=0.2, random_state=seed)
     train_loader = DataLoader(
         TensorDataset(
-            torch.tensor(X_train, dtype=torch.float32),
-            torch.tensor(y_train, dtype=torch.long)
+            torch.tensor(X_train, dtype=torch.float32), torch.tensor(y_train, dtype=torch.long)
         ),
         batch_size=32,
-        shuffle=True
+        shuffle=True,
     )
     val_loader = DataLoader(
         TensorDataset(
-            torch.tensor(X_val, dtype=torch.float32),
-            torch.tensor(y_val, dtype=torch.long)
+            torch.tensor(X_val, dtype=torch.float32), torch.tensor(y_val, dtype=torch.long)
         ),
-        batch_size=32
+        batch_size=32,
     )
 
     # Initialize model and training components
@@ -205,21 +205,23 @@ def train_model(
                 model, sample_x, epoch=epoch, capture_dropout=True, base_seed=seed
             )
 
-            snapshots.append({
-                "epoch": epoch,
-                "acts": acts,  # List: [h1, h2, ..., probs]
-                "weights": weights_viz,  # Between hidden layers (and hidden->out)
-                "loss_hist": loss_history.copy(),
-                "acc_hist": acc_history.copy(),
-                "img": X_val[sample_idx].reshape(32, 32),
-                "label": int(y_val[sample_idx]),
-                "pred": pred_label,
-                "conf": pred_conf,
-                "hidden_sizes": hidden_sizes,
-                "dropout_masks": dropout_masks,
-                "dropout_p": dropout,
-                "classes": SHAPE_NAMES,
-            })
+            snapshots.append(
+                {
+                    "epoch": epoch,
+                    "acts": acts,  # List: [h1, h2, ..., probs]
+                    "weights": weights_viz,  # Between hidden layers (and hidden->out)
+                    "loss_hist": loss_history.copy(),
+                    "acc_hist": acc_history.copy(),
+                    "img": X_val[sample_idx].reshape(32, 32),
+                    "label": int(y_val[sample_idx]),
+                    "pred": pred_label,
+                    "conf": pred_conf,
+                    "hidden_sizes": hidden_sizes,
+                    "dropout_masks": dropout_masks,
+                    "dropout_p": dropout,
+                    "classes": SHAPE_NAMES,
+                }
+            )
 
     # Save snapshots to disk
     os.makedirs("outputs", exist_ok=True)
