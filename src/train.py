@@ -51,13 +51,13 @@ def _forward_capture(
     for layer in model.model:
         if isinstance(layer, torch.nn.Linear):
             # Linear transform
-            x = x @ layer.weight.T + layer.bias
+            x = layer(x)
             # Store weights for viz except for the very first Linear (input->h1)
             if linear_index > 0:
                 weights_for_viz.append(layer.weight.detach().cpu().numpy())
             linear_index += 1
         elif isinstance(layer, torch.nn.ReLU):
-            x = torch.relu(x)
+            x = layer(x)
             acts.append(x.detach().cpu().numpy().squeeze())
         elif isinstance(layer, torch.nn.Dropout):
             # No-op in eval mode; masks captured in a second pass below
@@ -76,10 +76,9 @@ def _forward_capture(
         x2 = sample_x
         for layer in model.model:
             if isinstance(layer, torch.nn.Linear):
-                x2 = x2 @ layer.weight.T + layer.bias
+                x2 = layer(x2)
             elif isinstance(layer, torch.nn.ReLU):
-                pre_activation = torch.relu(x2)
-                x2 = pre_activation
+                x2 = layer(x2)
             elif isinstance(layer, torch.nn.Dropout):
                 x2_pre = x2.clone()
                 x2_dropped = F.dropout(x2, p=layer.p, training=True)
