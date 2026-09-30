@@ -3,7 +3,7 @@ import os
 import numpy as np
 import pytest
 
-from src.visualize import load_snapshots, visualize_snapshots
+from src.visualize import THEMES, _build_frames, load_snapshots, visualize_snapshots
 
 
 def _make_snapshot(epoch, n_hist):
@@ -63,6 +63,53 @@ def test_handles_legacy_snapshots_without_train_loss(snapshots, tmp_path):
     gif = str(tmp_path / "anim.gif")
     visualize_snapshots(snapshots, save_path_mp4=None, save_path_gif=gif)
     assert os.path.exists(gif)
+
+
+def test_renders_dark_theme(snapshots, tmp_path):
+    gif = str(tmp_path / "anim.gif")
+    png = str(tmp_path / "frame.png")
+    visualize_snapshots(snapshots, save_path_mp4=None, save_path_gif=gif,
+                        save_path_png=png, theme="dark")
+    assert os.path.exists(gif)
+    assert os.path.exists(png)
+
+
+def test_unknown_theme_raises(snapshots, tmp_path):
+    with pytest.raises(ValueError, match="Unknown theme"):
+        visualize_snapshots(snapshots, save_path_mp4=None,
+                            save_path_gif=str(tmp_path / "x.gif"), theme="neon")
+
+
+def test_themes_have_consistent_keys():
+    keys = {frozenset(t.keys()) for t in THEMES.values()}
+    assert len(keys) == 1
+
+
+def test_build_frames_no_smoothing(snapshots):
+    frames = _build_frames(snapshots, smooth=1)
+    assert len(frames) == len(snapshots)
+
+
+def test_build_frames_interpolates(snapshots):
+    frames = _build_frames(snapshots, smooth=4)
+    # (n-1) * smooth transitions + final frame
+    assert len(frames) == (len(snapshots) - 1) * 4 + 1
+    # Midpoint frame between snapshots 0 and 1 blends activations
+    mid = frames[2]  # t = 0.5 of first transition
+    expected = 0.5 * snapshots[0]["acts"][0] + 0.5 * snapshots[1]["acts"][0]
+    np.testing.assert_allclose(mid["acts"][0], expected, rtol=1e-5)
+    # Blended probabilities stay normalized
+    np.testing.assert_allclose(mid["acts"][-1].sum(), 1.0, atol=1e-5)
+    # First and last frames match the original endpoints
+    np.testing.assert_allclose(frames[0]["acts"][0], snapshots[0]["acts"][0])
+    np.testing.assert_allclose(frames[-1]["acts"][0], snapshots[-1]["acts"][0])
+
+
+def test_renders_smoothed_gif(snapshots, tmp_path):
+    gif = str(tmp_path / "smooth.gif")
+    visualize_snapshots(snapshots, save_path_mp4=None, save_path_gif=gif, smooth=3)
+    assert os.path.exists(gif)
+    assert os.path.getsize(gif) > 0
 
 
 def test_load_snapshots_roundtrip(snapshots, tmp_path):

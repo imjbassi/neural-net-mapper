@@ -54,13 +54,32 @@ python -m src.main --epochs 100 --hidden-sizes 256 128 64 --dropout 0.4 \
 | `--batch-size` | 32 | Mini-batch size |
 | `--seed` | 42 | Random seed |
 | `--device` | auto | Torch device (`cpu` / `cuda`) |
+| `--uncentered` | off | Scatter shapes randomly instead of centering (harder task) |
+| `--outline` | off | Draw shape outlines instead of filled shapes (harder task) |
+| `--jitter` | 2 | Max pixel jitter for centered shapes |
+| `--thickness` | 2 | Outline thickness with `--outline` |
 | `--output-dir` | outputs | Where snapshots and animations are written |
 | `--format` | mp4 | Animation format (`mp4` or `gif`) |
 | `--fps` | 2 | Animation frames per second |
 | `--top-k-edges` | 8 | Strongest edges drawn per node |
+| `--theme` | light | Visual theme: `light` or `dark` (neon glow style) |
+| `--smooth` | 1 | Interpolated frames per snapshot for fluid motion |
+| `--dpi` | 120 | Output resolution |
 | `--save-frame` | off | Also save the final frame as a PNG |
 | `--render-only` | off | Skip training, re-render from `snapshots.npz` |
 | `--quiet` | off | Suppress per-epoch progress output |
+
+To reproduce the demo video above (smooth 1080p dark-theme MP4):
+
+```bash
+pip install imageio-ffmpeg   # bundled ffmpeg for MP4 export
+python -m src.main --epochs 80 --sample-every 1 --n-per-class 400 \
+    --uncentered --outline --theme dark --smooth 4 --fps 24 --dpi 150
+```
+
+The `--uncentered --outline` combination makes the task genuinely hard (the MLP has to cope with shapes appearing anywhere in the frame), so the video shows a real learning arc instead of instant convergence.
+
+MP4 export uses the system ffmpeg if present, falls back to the `imageio-ffmpeg` bundled binary, and finally to an animated GIF if neither is available.
 
 Run `python -m src.main --help` for the full list. The standalone renderer also has its own CLI: `python -m src.visualize --input outputs/snapshots.npz --output anim.gif`.
 
@@ -113,7 +132,8 @@ The suite covers dataset generation, model construction/validation, a tiny end-t
 - **Dropout Visualization**: Real-time display of which neurons are dropped during training
 - **Weight Analysis**: Visual representation of connection strengths and signs
 - **Training Metrics**: Train loss, validation loss, and validation accuracy tracked and plotted live
-- **Leak-Free Preprocessing**: Input standardization uses training-set statistics only (computed after the train/val split)
+- **Leak-Free Preprocessing**: Inputs are standardized with a global mean/std computed from the training set only (after the train/val split); per-pixel stats are avoided since near-constant pixels make them numerically explosive
+- **Demo Mode**: Dark neon theme with glow effects and frame interpolation for smooth, presentation-ready videos
 - **Flexible Architecture**: Configurable hidden layer sizes and dropout rates from the CLI
 - **Reproducible**: Seed-based initialization; the dropout-mask capture pass is RNG-isolated so it never perturbs training
 

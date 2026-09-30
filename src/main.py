@@ -43,6 +43,16 @@ def parse_args(argv=None):
     train_group.add_argument("--quiet", action="store_true",
                              help="Suppress per-epoch progress output")
 
+    data_group = parser.add_argument_group("dataset difficulty")
+    data_group.add_argument("--uncentered", action="store_true",
+                            help="Scatter shapes randomly instead of centering (harder)")
+    data_group.add_argument("--jitter", type=int, default=2,
+                            help="Max pixel jitter for centered shapes (default: 2)")
+    data_group.add_argument("--outline", action="store_true",
+                            help="Draw shape outlines instead of filled shapes (harder)")
+    data_group.add_argument("--thickness", type=int, default=2,
+                            help="Outline thickness with --outline (default: 2)")
+
     viz_group = parser.add_argument_group("visualization")
     viz_group.add_argument("--output-dir", default="outputs",
                            help="Directory for snapshots and animations (default: outputs)")
@@ -52,6 +62,13 @@ def parse_args(argv=None):
                            help="Animation frames per second (default: 2)")
     viz_group.add_argument("--top-k-edges", type=int, default=8,
                            help="Strongest edges drawn per node (default: 8)")
+    viz_group.add_argument("--theme", choices=["light", "dark"], default="light",
+                           help="Visual theme (default: light)")
+    viz_group.add_argument("--smooth", type=int, default=1,
+                           help="Interpolated frames per snapshot for fluid motion "
+                                "(default: 1 = off); raise --fps accordingly")
+    viz_group.add_argument("--dpi", type=int, default=120,
+                           help="Output resolution (default: 120)")
     viz_group.add_argument("--save-frame", action="store_true",
                            help="Also save the final frame as a PNG still")
     viz_group.add_argument("--render-only", action="store_true",
@@ -88,6 +105,10 @@ def main(argv=None):
                 device=args.device,
                 output_dir=args.output_dir,
                 verbose=not args.quiet,
+                centered=not args.uncentered,
+                jitter=args.jitter,
+                fill=not args.outline,
+                thickness=args.thickness,
             )
 
         if not snapshots:
@@ -96,22 +117,26 @@ def main(argv=None):
 
         os.makedirs(args.output_dir, exist_ok=True)
         png_path = os.path.join(args.output_dir, "final_frame.png") if args.save_frame else None
+        viz_kwargs = dict(
+            save_path_png=png_path,
+            fps=args.fps,
+            top_k_edges=args.top_k_edges,
+            theme=args.theme,
+            smooth=args.smooth,
+            dpi=args.dpi,
+        )
         if args.format == "gif":
             visualize_snapshots(
                 snapshots,
                 save_path_mp4=None,
                 save_path_gif=os.path.join(args.output_dir, "animation.gif"),
-                save_path_png=png_path,
-                fps=args.fps,
-                top_k_edges=args.top_k_edges,
+                **viz_kwargs,
             )
         else:
             visualize_snapshots(
                 snapshots,
                 save_path_mp4=os.path.join(args.output_dir, "animation.mp4"),
-                save_path_png=png_path,
-                fps=args.fps,
-                top_k_edges=args.top_k_edges,
+                **viz_kwargs,
             )
         print(f"Done. Outputs written to {args.output_dir}/")
         return 0

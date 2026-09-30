@@ -105,6 +105,10 @@ def train_model(
     device: Optional[str] = None,
     output_dir: str = "outputs",
     verbose: bool = True,
+    centered: bool = True,
+    jitter: int = 2,
+    fill: bool = True,
+    thickness: int = 2,
 ) -> List[Dict[str, Any]]:
     """Train an MLP and capture visualization snapshots.
 
@@ -121,6 +125,11 @@ def train_model(
         device: Torch device string ("cpu", "cuda"); auto-detected when None
         output_dir: Directory for saved snapshots
         verbose: Print per-epoch progress
+        centered: Center shapes (with jitter); False scatters them randomly,
+            making the task considerably harder
+        jitter: Max pixel jitter applied to centered shapes
+        fill: Draw filled shapes; False draws outlines only (harder)
+        thickness: Outline thickness when fill is False
 
     Returns:
         List of snapshot dictionaries containing training state at various epochs
@@ -154,14 +163,19 @@ def train_model(
 
     # Generate dataset and split BEFORE standardizing so validation statistics
     # never leak into the normalization applied to training data.
-    X, y = generate_dataset(n_per_class, centered=True, thickness=2, jitter=2, fill=True)
+    X, y = generate_dataset(
+        n_per_class, centered=centered, thickness=thickness, jitter=jitter, fill=fill
+    )
     X_train, X_val, y_train, y_val = train_test_split(
         X, y, test_size=val_split, random_state=seed, stratify=y
     )
 
-    # Standardize inputs using training-set statistics only
-    mean = X_train.mean(axis=0, keepdims=True)
-    std = X_train.std(axis=0, keepdims=True) + 1e-6
+    # Standardize inputs using training-set statistics only. A single global
+    # mean/std is used rather than per-pixel stats: near-constant pixels have
+    # std ~ 0, and dividing by it explodes small validation-set differences
+    # into huge feature values (and huge validation losses).
+    mean = float(X_train.mean())
+    std = float(X_train.std()) + 1e-6
     X_train = (X_train - mean) / std
     X_val = (X_val - mean) / std
 

@@ -86,6 +86,14 @@ class TestTrainModel:
         with pytest.raises(ValueError):
             train_model(n_per_class=6, output_dir=str(tmp_path), **kwargs)
 
+    def test_dataset_difficulty_options(self, tmp_path):
+        snapshots = train_model(
+            epochs=1, sample_every=1, hidden_sizes=[8], n_per_class=6,
+            output_dir=str(tmp_path), verbose=False,
+            centered=False, fill=False, thickness=1, jitter=0,
+        )
+        assert len(snapshots) == 1
+
     def test_reproducible_with_same_seed(self, tmp_path):
         common = dict(
             epochs=2, sample_every=2, hidden_sizes=[8], n_per_class=8, verbose=False

@@ -27,6 +27,20 @@ def test_custom_args():
     assert args.quiet
 
 
+def test_difficulty_and_style_args():
+    args = parse_args([
+        "--uncentered", "--outline", "--jitter", "4", "--thickness", "1",
+        "--theme", "dark", "--smooth", "4", "--dpi", "150",
+    ])
+    assert args.uncentered
+    assert args.outline
+    assert args.jitter == 4
+    assert args.thickness == 1
+    assert args.theme == "dark"
+    assert args.smooth == 4
+    assert args.dpi == 150
+
+
 def test_render_only_without_snapshots_fails(tmp_path):
     exit_code = main(["--render-only", "--output-dir", str(tmp_path / "missing")])
     assert exit_code == 1
