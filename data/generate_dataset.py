@@ -4,6 +4,9 @@ import random
 import numpy as np
 from PIL import Image, ImageDraw
 
+# Canonical class names; label i corresponds to SHAPE_NAMES[i] everywhere.
+SHAPE_NAMES = ["circle", "square", "triangle"]
+
 
 def generate_shape_image(
     shape, size=32, centered=True, thickness=2, jitter=2, fill=False
@@ -107,7 +110,7 @@ def generate_shape_image(
 
 
 def generate_dataset(
-    n_per_class=100, size=32, centered=True, thickness=2, jitter=2, fill=False
+    n_per_class=100, size=32, centered=True, thickness=2, jitter=2, fill=False, seed=None
 ):
     """Generate a dataset of shape images with labels.
 
@@ -118,6 +121,7 @@ def generate_dataset(
         thickness: Outline thickness for unfilled shapes
         jitter: Maximum pixel jitter applied to centered shapes
         fill: Fill the shapes instead of drawing outline only
+        seed: Optional seed applied to the module-level RNG for reproducibility
 
     Returns:
         tuple: (X, y) where X is array of flattened images and y is array of labels
@@ -125,7 +129,12 @@ def generate_dataset(
             - y shape: (n_samples,)
             - Labels: 0=circle, 1=square, 2=triangle
     """
-    shapes = ["circle", "square", "triangle"]
+    if n_per_class <= 0:
+        raise ValueError(f"n_per_class must be positive, got {n_per_class}")
+    if seed is not None:
+        random.seed(seed)
+
+    shapes = SHAPE_NAMES
     total_samples = n_per_class * len(shapes)
 
     # Pre-allocate arrays for better performance

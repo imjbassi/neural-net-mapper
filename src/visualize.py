@@ -1,7 +1,9 @@
-﻿import numpy as np
+import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 from matplotlib import colormaps as mpl_cmaps
+
+DEFAULT_CLASSES = ["circle", "square", "triangle"]
 
 
 def _draw_network(
@@ -19,7 +21,7 @@ def _draw_network(
     output_labels=None,
 ):
     """Draw nodes and connecting weights between layers.
-    
+
     Args:
         ax: Matplotlib axis to draw on
         acts: List of activation arrays [h1, h2, ..., probs]
@@ -53,7 +55,7 @@ def _draw_network(
         a_min, a_max = float(act_min), float(act_max)
         if a_max - a_min < 1e-6:
             a_max = a_min + 1e-6
-    
+
     cmap = cmap or mpl_cmaps.get_cmap('viridis')
 
     # Determine node positions per layer (max 12 nodes displayed per layer)
@@ -72,16 +74,16 @@ def _draw_network(
         out_sz = W.shape[0]
         in_idx = np.linspace(0, in_sz - 1, num=min(in_sz, max_nodes_per_layer), dtype=int)
         out_idx = np.linspace(0, out_sz - 1, num=min(out_sz, max_nodes_per_layer), dtype=int)
-        
+
         w_std = np.std(W) + 1e-6
-        
+
         for oi, out_node_idx in enumerate(out_idx):
             y_out = y_positions[li + 1][oi]
             # Draw only top-k strongest incoming edges for clarity
             sub_w = np.abs(W[out_node_idx][in_idx])
             k = min(top_k_edges, len(in_idx))
             top_idx = np.argsort(sub_w)[-k:]
-            
+
             for ii in top_idx:
                 ix = in_idx[ii]
                 weight = W[out_node_idx, ix]
@@ -103,7 +105,7 @@ def _draw_network(
         colors = cmap(np.clip(norm, 0, 1))
         sizes = 250 * (0.4 + 0.9 * np.clip(norm, 0, 1))  # Scale node size by activation
         ax.scatter(xs, y_positions[li], s=sizes, c=colors, edgecolors='k', linewidths=0.4, zorder=3)
-        
+
         # If dropout mask available for this layer
         if dropout_masks and li < len(dropout_masks):
             dmask = dropout_masks[li]
@@ -111,7 +113,7 @@ def _draw_network(
             dropped = dmask[d_idx]
             for j, dropped_flag in enumerate(dropped):
                 if dropped_flag:
-                    ax.scatter([xs[j]], [y_positions[li][j]], s=300, facecolors='none', 
+                    ax.scatter([xs[j]], [y_positions[li][j]], s=300, facecolors='none',
                              edgecolors='red', linewidths=1.2, zorder=4)
 
         # Layer labels at the top of each column
@@ -137,13 +139,21 @@ def _draw_network(
     )
 
 
-def visualize_snapshots(snapshots, save_path_mp4="outputs/animation.mp4", save_path_gif=None, fps=2, top_k_edges=8):
+def visualize_snapshots(
+    snapshots,
+    save_path_mp4="outputs/animation.mp4",
+    save_path_gif=None,
+    save_path_png=None,
+    fps=2,
+    top_k_edges=8,
+):
     """Create an animated visualization of network training snapshots.
-    
+
     Args:
         snapshots: List of snapshot dictionaries containing network state
         save_path_mp4: Path to save MP4 animation (None to skip)
         save_path_gif: Path to save GIF animation (None to skip, used as fallback if MP4 fails)
+        save_path_png: Optional path to save the final frame as a still image
         fps: Frames per second for animation
         top_k_edges: Number of strongest edges to draw per output node
     """
@@ -152,6 +162,8 @@ def visualize_snapshots(snapshots, save_path_mp4="outputs/animation.mp4", save_p
 
     if not snapshots:
         return
+
+    classes = [str(c) for c in snapshots[0].get("classes", DEFAULT_CLASSES)]
 
     fig = plt.figure(figsize=(10, 6))
 
@@ -168,17 +180,23 @@ def visualize_snapshots(snapshots, save_path_mp4="outputs/animation.mp4", save_p
     im = ax_img.imshow(np.zeros((32, 32)), cmap='gray', vmin=0, vmax=1)
     pred_txt = ax_img.text(0.5, -0.08, "", transform=ax_img.transAxes, ha='center', va='top', fontsize=10)
 
+    has_train_loss = "train_loss_hist" in snapshots[0]
     ax_metrics.set_title("Loss & Accuracy")
     ax_metrics.set_xlim(1, max(2, len(snapshots)))
     ax_metrics.set_ylim(0, 1.1)
     ax_metrics.grid(True, alpha=0.3)
-    (loss_line,) = ax_metrics.plot([], [], label="Loss", color="#1f77b4")
-    (acc_line,) = ax_metrics.plot([], [], label="Acc", color="#ff7f0e")
-    ax_metrics.legend(loc="upper right")
+    (loss_line,) = ax_metrics.plot([], [], label="Val loss", color="#1f77b4")
+    (train_loss_line,) = ax_metrics.plot(
+        [], [], label="Train loss", color="#1f77b4", linestyle="--", alpha=0.6
+    )
+    (acc_line,) = ax_metrics.plot([], [], label="Val acc", color="#ff7f0e")
+    if not has_train_loss:
+        train_loss_line.set_visible(False)
+    ax_metrics.legend(loc="upper right", fontsize=7)
 
     ax_bar.set_title("Class probabilities")
-    classes = ["circle", "square", "triangle"]
-    bars = ax_bar.bar(classes, [0, 0, 0], color=['#6baed6', '#9ecae1', '#c6dbef'])
+    bar_colors = ['#6baed6', '#fd8d3c', '#74c476', '#9e9ac8', '#fdd0a2', '#c7e9c0']
+    bars = ax_bar.bar(classes, [0] * len(classes), color=bar_colors[:len(classes)])
     ax_bar.set_ylim(0, 1)
 
     # Precompute network x positions
@@ -207,6 +225,7 @@ def visualize_snapshots(snapshots, save_path_mp4="outputs/animation.mp4", save_p
         acts = s["acts"]
         weights = s["weights"]
         loss_hist = s["loss_hist"]
+        train_loss_hist = s.get("train_loss_hist", [])
         acc_hist = s["acc_hist"]
 
         # Input image
@@ -221,10 +240,18 @@ def visualize_snapshots(snapshots, save_path_mp4="outputs/animation.mp4", save_p
         # Metrics
         xs = np.arange(1, len(loss_hist) + 1)
         loss_line.set_data(xs, loss_hist)
+        if train_loss_hist:
+            train_loss_line.set_data(np.arange(1, len(train_loss_hist) + 1), train_loss_hist)
         acc_line.set_data(xs, acc_hist)
         ax_metrics.set_xlim(1, max(2, len(loss_hist)))
-        y_max = max(1.0, (loss_hist[-1] if loss_hist else 0.0), (max(acc_hist) if acc_hist else 0.0)) + 0.1
-        ax_metrics.set_ylim(0, y_max)
+        y_candidates = [1.0]
+        if loss_hist:
+            y_candidates.append(max(loss_hist))
+        if train_loss_hist:
+            y_candidates.append(max(train_loss_hist))
+        if acc_hist:
+            y_candidates.append(max(acc_hist))
+        ax_metrics.set_ylim(0, max(y_candidates) + 0.1)
 
         # Bar chart of class probabilities
         probs = acts[-1]
@@ -244,11 +271,11 @@ def visualize_snapshots(snapshots, save_path_mp4="outputs/animation.mp4", save_p
             act_min=act_min,
             act_max=act_max,
             layer_labels=layer_labels,
-            output_labels=s.get("classes", ["circle", "square", "triangle"]),
+            output_labels=classes,
         )
 
         title.set_text(f"Epoch {epoch}  |  Loss: {loss_hist[-1]:.3f}  Acc: {acc_hist[-1] * 100:.1f}%")
-        return [im, loss_line, acc_line, *bars]
+        return [im, loss_line, train_loss_line, acc_line, *bars]
 
     ani = animation.FuncAnimation(fig, update, frames=len(snapshots), blit=False, repeat=False)
 
@@ -262,9 +289,37 @@ def visualize_snapshots(snapshots, save_path_mp4="outputs/animation.mp4", save_p
             ani.save(save_path_gif, fps=fps)
     elif save_path_gif:
         ani.save(save_path_gif, fps=fps)
+
+    # Optionally save the final frame as a still image
+    if save_path_png:
+        update(len(snapshots) - 1)
+        fig.savefig(save_path_png, dpi=120, bbox_inches='tight')
+
     plt.close(fig)
 
 
+def load_snapshots(path="outputs/snapshots.npz"):
+    """Load saved snapshots from an .npz file produced by train_model."""
+    return list(np.load(path, allow_pickle=True)["snapshots"])
+
+
 if __name__ == "__main__":
-    data = np.load("outputs/snapshots.npz", allow_pickle=True)["snapshots"]
-    visualize_snapshots(data)
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Re-render an animation from saved snapshots.")
+    parser.add_argument("--input", default="outputs/snapshots.npz", help="Path to snapshots.npz")
+    parser.add_argument("--output", default="outputs/animation.mp4",
+                        help="Output animation path (.mp4 or .gif)")
+    parser.add_argument("--png", default=None, help="Optional path for a final-frame still image")
+    parser.add_argument("--fps", type=int, default=2, help="Animation frames per second")
+    parser.add_argument("--top-k-edges", type=int, default=8,
+                        help="Strongest edges drawn per node")
+    args = parser.parse_args()
+
+    data = load_snapshots(args.input)
+    if args.output.endswith(".gif"):
+        visualize_snapshots(data, save_path_mp4=None, save_path_gif=args.output,
+                            save_path_png=args.png, fps=args.fps, top_k_edges=args.top_k_edges)
+    else:
+        visualize_snapshots(data, save_path_mp4=args.output, save_path_png=args.png,
+                            fps=args.fps, top_k_edges=args.top_k_edges)
