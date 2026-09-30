@@ -74,6 +74,15 @@ def test_renders_dark_theme(snapshots, tmp_path):
     assert os.path.exists(png)
 
 
+def test_renders_paper_theme(snapshots, tmp_path):
+    gif = str(tmp_path / "anim.gif")
+    png = str(tmp_path / "frame.png")
+    visualize_snapshots(snapshots, save_path_mp4=None, save_path_gif=gif,
+                        save_path_png=png, theme="paper")
+    assert os.path.exists(gif)
+    assert os.path.exists(png)
+
+
 def test_unknown_theme_raises(snapshots, tmp_path):
     with pytest.raises(ValueError, match="Unknown theme"):
         visualize_snapshots(snapshots, save_path_mp4=None,

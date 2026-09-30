@@ -62,8 +62,9 @@ def parse_args(argv=None):
                            help="Animation frames per second (default: 2)")
     viz_group.add_argument("--top-k-edges", type=int, default=8,
                            help="Strongest edges drawn per node (default: 8)")
-    viz_group.add_argument("--theme", choices=["light", "dark"], default="light",
-                           help="Visual theme (default: light)")
+    viz_group.add_argument("--theme", choices=["light", "dark", "paper"], default="light",
+                           help="Visual theme; 'paper' is a white-background "
+                                "academic style (default: light)")
     viz_group.add_argument("--smooth", type=int, default=1,
                            help="Interpolated frames per snapshot for fluid motion "
                                 "(default: 1 = off); raise --fps accordingly")

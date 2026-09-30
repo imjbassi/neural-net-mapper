@@ -6,7 +6,7 @@ An interactive Python tool that trains a multi-layer perceptron (MLP) with dropo
 
 ![Training animation demo](assets/demo_animation.gif)
 
-*The network learning to classify randomly placed outline shapes over 80 epochs (dark theme, interpolated frames). A full-quality 1080p MP4 of the same run is at [`assets/demo_video.mp4`](assets/demo_video.mp4).*
+*The network learning to classify randomly placed outline shapes over 80 epochs (paper theme, interpolated frames; blue edges = positive weights, red = negative). A full-quality 1080p MP4 of the same run is at [`assets/demo_video.mp4`](assets/demo_video.mp4).*
 
 ## Architecture / Pipeline
 
@@ -64,19 +64,19 @@ python -m src.main --epochs 100 --hidden-sizes 256 128 64 --dropout 0.4 \
 | `--format` | mp4 | Animation format (`mp4` or `gif`) |
 | `--fps` | 2 | Animation frames per second |
 | `--top-k-edges` | 8 | Strongest edges drawn per node |
-| `--theme` | light | Visual theme: `light` or `dark` (neon glow style) |
+| `--theme` | light | Visual theme: `light`, `dark` (neon glow), or `paper` (white-background academic style, serif type, ColorBrewer edges) |
 | `--smooth` | 1 | Interpolated frames per snapshot for fluid motion |
 | `--dpi` | 120 | Output resolution |
 | `--save-frame` | off | Also save the final frame as a PNG |
 | `--render-only` | off | Skip training, re-render from `snapshots.npz` |
 | `--quiet` | off | Suppress per-epoch progress output |
 
-To reproduce the demo video above (smooth 1080p dark-theme MP4):
+To reproduce the demo video above (smooth 1080p paper-theme MP4):
 
 ```bash
 pip install imageio-ffmpeg   # bundled ffmpeg for MP4 export
 python -m src.main --epochs 80 --sample-every 1 --n-per-class 400 \
-    --uncentered --outline --theme dark --smooth 4 --fps 24 --dpi 150
+    --uncentered --outline --theme paper --smooth 4 --fps 24 --dpi 150
 ```
 
 The `--uncentered --outline` combination makes the task genuinely hard (the MLP has to cope with shapes appearing anywhere in the frame), so the video shows a real learning arc instead of instant convergence.
@@ -135,7 +135,7 @@ The suite covers dataset generation, model construction/validation, a tiny end-t
 - **Weight Analysis**: Visual representation of connection strengths and signs
 - **Training Metrics**: Train loss, validation loss, and validation accuracy tracked and plotted live
 - **Leak-Free Preprocessing**: Inputs are standardized with a global mean/std computed from the training set only (after the train/val split); per-pixel stats are avoided since near-constant pixels make them numerically explosive
-- **Demo Mode**: Dark neon theme with glow effects and frame interpolation for smooth, presentation-ready videos
+- **Presentation Themes**: `paper` (white-background academic style with serif type and ColorBrewer edges), `dark` (neon glow), and `light`, plus frame interpolation for smooth, presentation-ready videos
 - **Flexible Architecture**: Configurable hidden layer sizes and dropout rates from the CLI
 - **Reproducible**: Seed-based initialization; the dropout-mask capture pass is RNG-isolated so it never perturbs training
 

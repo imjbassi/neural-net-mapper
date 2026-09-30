@@ -7,7 +7,9 @@ from matplotlib import colormaps as mpl_cmaps
 DEFAULT_CLASSES = ["circle", "square", "triangle"]
 
 # Visual themes for the rendered animation. "light" is the classic look;
-# "dark" is a high-contrast neon style with glow effects, made for demos.
+# "dark" is a high-contrast neon style with glow effects; "paper" is a clean
+# white-background style in the spirit of academic figures (serif type,
+# ColorBrewer RdBu edge colors: blue = positive weight, red = negative).
 THEMES = {
     "light": {
         "bg": "#ffffff",
@@ -24,6 +26,9 @@ THEMES = {
         "acc_color": "#ff7f0e",
         "bar_colors": ["#6baed6", "#fd8d3c", "#74c476", "#9e9ac8", "#fdd0a2"],
         "legend_face": "white",
+        "font_family": "sans-serif",
+        "title_weight": "bold",
+        "edge_legend": "green = positive weight, red = negative",
     },
     "dark": {
         "bg": "#0b0f19",
@@ -40,6 +45,28 @@ THEMES = {
         "acc_color": "#fbbf24",
         "bar_colors": ["#60a5fa", "#c084fc", "#34d399", "#f472b6", "#fbbf24"],
         "legend_face": "#141a2a",
+        "font_family": "sans-serif",
+        "title_weight": "bold",
+        "edge_legend": "green = positive weight, red = negative",
+    },
+    "paper": {
+        "bg": "#ffffff",
+        "text": "#1a1a1a",
+        "grid": "#666666",
+        "pos_edge": (0.13, 0.40, 0.67),   # ColorBrewer RdBu blue (#2166ac)
+        "neg_edge": (0.70, 0.09, 0.17),   # ColorBrewer RdBu red (#b2182b)
+        "node_cmap": "viridis",
+        "node_border": "#333333",
+        "dropout_ring": "#e08214",        # colorblind-safe orange
+        "glow": False,
+        "invert_input": False,
+        "loss_color": "#2166ac",
+        "acc_color": "#1b7837",
+        "bar_colors": ["#66c2a5", "#fc8d62", "#8da0cb", "#e78ac3", "#a6d854"],  # Set2
+        "legend_face": "#f7f7f7",
+        "font_family": "serif",
+        "title_weight": "normal",
+        "edge_legend": "blue = positive weight, red = negative",
     },
 }
 
@@ -197,7 +224,8 @@ def _draw_network(
     ax.text(
         0.02,
         0.02,
-        "Edges: green=+ red=-, thickness/alpha=|w|\nNodes: color/size=activation, ring=dropout",
+        f"Edges: {theme['edge_legend']}, thickness/alpha=|w|\n"
+        "Nodes: color/size=activation, ring=dropout",
         transform=ax.transAxes,
         fontsize=7,
         va='bottom',
@@ -268,19 +296,45 @@ def visualize_snapshots(
         save_path_png: Optional path to save the final frame as a still image
         fps: Frames per second for animation
         top_k_edges: Number of strongest edges to draw per output node
-        theme: Visual theme name ("light" or "dark")
+        theme: Visual theme name ("light", "dark", or "paper")
         smooth: Interpolated frames per snapshot transition (1 = off).
             Raise fps accordingly, e.g. smooth=4 with fps=8.
         dpi: Output resolution
     """
+    if theme not in THEMES:
+        raise ValueError(f"Unknown theme {theme!r}. Available: {sorted(THEMES)}")
+    # The theme's font family must be active while figure text is created
+    with plt.rc_context({"font.family": THEMES[theme]["font_family"]}):
+        _render_snapshots(
+            snapshots,
+            save_path_mp4=save_path_mp4,
+            save_path_gif=save_path_gif,
+            save_path_png=save_path_png,
+            fps=fps,
+            top_k_edges=top_k_edges,
+            theme=theme,
+            smooth=smooth,
+            dpi=dpi,
+        )
+
+
+def _render_snapshots(
+    snapshots,
+    save_path_mp4,
+    save_path_gif,
+    save_path_png,
+    fps,
+    top_k_edges,
+    theme,
+    smooth,
+    dpi,
+):
     if isinstance(snapshots, np.ndarray):
         snapshots = list(snapshots)
 
     if not snapshots:
         return
 
-    if theme not in THEMES:
-        raise ValueError(f"Unknown theme {theme!r}. Available: {sorted(THEMES)}")
     th = THEMES[theme]
 
     classes = [str(c) for c in snapshots[0].get("classes", DEFAULT_CLASSES)]
@@ -351,7 +405,7 @@ def visualize_snapshots(
         act_min, act_max = 0.0, 1.0
     cmap = mpl_cmaps.get_cmap(th["node_cmap"])
 
-    title = fig.suptitle("", fontsize=14, color=th["text"], fontweight='bold')
+    title = fig.suptitle("", fontsize=14, color=th["text"], fontweight=th["title_weight"])
 
     def update(i):
         s = frames[i]
