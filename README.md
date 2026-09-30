@@ -12,7 +12,11 @@ An interactive Python tool that trains a multi-layer perceptron (MLP) with dropo
 
 ## Demo
 
+The network learning to classify randomly placed outline shapes over 80 epochs (dark theme, interpolated frames):
+
 ![Training animation demo](assets/demo_animation.gif)
+
+A full-quality 1080p MP4 of the same run is at [`assets/demo_video.mp4`](assets/demo_video.mp4).
 
 ## Quick Start
 
