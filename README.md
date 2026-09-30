@@ -4,19 +4,17 @@
 
 An interactive Python tool that trains a multi-layer perceptron (MLP) with dropout on a synthetic shapes dataset and maps its inner workings over time. It visualizes neuron activations, weight magnitudes/signs, predictions, and live training loss/accuracy through animated network diagrams using Matplotlib.
 
-![Sample visualization frame](assets/sample_frame.png)
+![Training animation demo](assets/demo_animation.gif)
+
+*The network learning to classify randomly placed outline shapes over 80 epochs (dark theme, interpolated frames). A full-quality 1080p MP4 of the same run is at [`assets/demo_video.mp4`](assets/demo_video.mp4).*
 
 ## Architecture / Pipeline
 
 ![Pipeline diagram](assets/architecture.svg)
 
-## Demo
+## Sample Frame
 
-The network learning to classify randomly placed outline shapes over 80 epochs (dark theme, interpolated frames):
-
-![Training animation demo](assets/demo_animation.gif)
-
-A full-quality 1080p MP4 of the same run is at [`assets/demo_video.mp4`](assets/demo_video.mp4).
+![Sample visualization frame](assets/sample_frame.png)
 
 ## Quick Start
 
